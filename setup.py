@@ -14,8 +14,6 @@ setup(
         "numpy<2.0.0",
         "flax>=0.8.0",
         "gymnasium==0.29.1",
-        "imageio==2.31.3",
-        "mujoco==2.3.7",
         "optax==0.1.7",
         "tqdm==4.66.1",
         "rich==13.5.2",
