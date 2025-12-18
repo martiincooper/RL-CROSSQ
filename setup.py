@@ -21,8 +21,7 @@ setup(
         "tensorboard>=2.14.0",
         "tensorflow-probability>=0.21.0",
         "wandb>=0.15.10",
-        "scipy>=1.11.4",
-        "shimmy==1.3.0"
+        "scipy>=1.11.4"
     ],
     extras_require={
         "tests": [
