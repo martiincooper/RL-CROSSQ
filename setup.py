@@ -15,13 +15,13 @@ setup(
         "flax>=0.8.0",
         "gymnasium==0.29.1",
         "optax==0.1.7",
-        "tqdm==4.66.1",
-        "rich==13.5.2",
+        "tqdm>=4.66.1",
+        "rich>=13.5.2",
         "rlax==0.1.6",
         "tensorboard>=2.14.0",
         "tensorflow-probability>=0.21.0",
         "wandb>=0.15.10",
-        "scipy==1.11.4",
+        "scipy>=1.11.4",
         "shimmy==1.3.0"
     ],
     extras_require={
