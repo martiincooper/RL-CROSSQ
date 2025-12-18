@@ -40,6 +40,7 @@ class ConstantEntropyCoef(nn.Module):
 class SAC(OffPolicyAlgorithmJax):
     policy_aliases: ClassVar[Dict[str, Type[SACPolicy]]] = {  # type: ignore[assignment]
         "MlpPolicy": SACPolicy,
+        "CnnPolicy": SACPolicy,
         # Minimal dict support using flatten()
         "MultiInputPolicy": SACPolicy,
     }
@@ -261,7 +262,7 @@ class SAC(OffPolicyAlgorithmJax):
         next_observations: np.ndarray,
         rewards: np.ndarray,
         dones: np.ndarray,
-        key: jax.random.KeyArray,
+        key: jax.Array,
     ):
         key, noise_key, dropout_key_target, dropout_key_current, redq_key = jax.random.split(key, 5)
         # sample action from the actor
@@ -357,7 +358,7 @@ class SAC(OffPolicyAlgorithmJax):
         qf_state: RLTrainState,
         ent_coef_state: TrainState,
         observations: np.ndarray,
-        key: jax.random.KeyArray,
+        key: jax.Array,
         q_reduce_fn = jnp.min,  # Changes for redq and droq
         td3_mode = False,
     ):

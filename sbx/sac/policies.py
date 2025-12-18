@@ -11,6 +11,7 @@ import tensorflow_probability
 from flax.training.train_state import TrainState
 from gymnasium import spaces
 from stable_baselines3.common.type_aliases import Schedule
+from stable_baselines3.common.preprocessing import is_image_space
 
 from sbx.common.distributions import TanhTransformedDistribution
 from sbx.common.policies import BaseJaxPolicy
@@ -186,6 +187,20 @@ class BatchRenorm(Module):
     )
 
 
+class NatureCNN(nn.Module):
+    @nn.compact
+    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+        x = x.astype(jnp.float32) / 255.0
+        x = nn.Conv(features=32, kernel_size=(8, 8), strides=(4, 4))(x)
+        x = nn.relu(x)
+        x = nn.Conv(features=64, kernel_size=(4, 4), strides=(2, 2))(x)
+        x = nn.relu(x)
+        x = nn.Conv(features=64, kernel_size=(3, 3), strides=(1, 1))(x)
+        x = nn.relu(x)
+        x = x.reshape((x.shape[0], -1))  # Flatten
+        return x
+
+
 class Critic(nn.Module):
     net_arch: Sequence[int]
     activation_fn: Type[nn.Module]
@@ -194,9 +209,13 @@ class Critic(nn.Module):
     dropout_rate: Optional[float] = None
     use_batch_norm: bool = False
     bn_mode: str = "bn"
+    use_cnn: bool = False
 
     @nn.compact
     def __call__(self, x: jnp.ndarray, action: jnp.ndarray, train) -> jnp.ndarray:
+        if self.use_cnn:
+            x = NatureCNN()(x)
+
         if 'bn' in self.bn_mode:
             BN = nn.BatchNorm
         elif 'brn' in self.bn_mode:
@@ -241,6 +260,7 @@ class VectorCritic(nn.Module):
     use_layer_norm: bool = False
     dropout_rate: Optional[float] = None
     n_critics: int = 2
+    use_cnn: bool = False
 
     @nn.compact
     def __call__(self, obs: jnp.ndarray, action: jnp.ndarray, train: bool = True):
@@ -262,6 +282,7 @@ class VectorCritic(nn.Module):
             dropout_rate=self.dropout_rate,
             net_arch=self.net_arch,
             activation_fn=self.activation_fn,
+            use_cnn=self.use_cnn,
         )(obs, action, train)
         return q_values
 
@@ -274,6 +295,7 @@ class Actor(nn.Module):
     log_std_max: float = 2
     use_batch_norm: bool = False
     bn_mode: str = "bn"
+    use_cnn: bool = False
 
     def get_std(self):
         # Make it work with gSDE
@@ -282,6 +304,8 @@ class Actor(nn.Module):
     @nn.compact
     # type: ignore[name-defined]
     def __call__(self, x: jnp.ndarray, train) -> tfd.Distribution:
+        if self.use_cnn:
+             x = NatureCNN()(x)
         
         if 'brn_actor' in self.bn_mode:
             BN = BatchRenorm
@@ -376,7 +400,7 @@ class SACPolicy(BaseJaxPolicy):
         if td3_mode:
             self._predict = self._predict_deterministic
 
-    def build(self, key: jax.random.KeyArray, lr_schedule: Schedule, qf_learning_rate: float) -> jax.random.KeyArray:
+    def build(self, key: jax.Array, lr_schedule: Schedule, qf_learning_rate: float) -> jax.Array:
         key, actor_key, qf_key, dropout_key, bn_key = jax.random.split(key, 5)
         # Keep a key for the actor
         key, self.key = jax.random.split(key, 2)
@@ -396,6 +420,7 @@ class SACPolicy(BaseJaxPolicy):
             use_batch_norm=self.batch_norm,
             batch_norm_momentum=self.batch_norm_momentum,
             bn_mode=self.batch_norm_mode,
+            use_cnn=is_image_space(self.observation_space),
         )
         # Hack to make gSDE work without modifying internal SB3 code
         self.actor.reset_noise = self.reset_noise
@@ -425,6 +450,7 @@ class SACPolicy(BaseJaxPolicy):
             net_arch=self.net_arch_qf,
             activation_fn=self.activation_fn,
             n_critics=self.n_critics,
+            use_cnn=is_image_space(self.observation_space),
         )
 
         qf_init_variables = self.qf.init(
@@ -453,12 +479,12 @@ class SACPolicy(BaseJaxPolicy):
 
         self.actor.apply = jax.jit(  # type: ignore[method-assign]
             self.actor.apply,
-            static_argnames=("use_batch_norm", "batch_norm_momentum", "bn_mode")
+            static_argnames=("use_batch_norm", "batch_norm_momentum", "bn_mode", "use_cnn")
         )
         self.qf.apply = jax.jit(  # type: ignore[method-assign]
             self.qf.apply,
             static_argnames=("dropout_rate", "use_layer_norm",
-                             "use_batch_norm", "batch_norm_momentum", "bn_mode"),
+                             "use_batch_norm", "batch_norm_momentum", "bn_mode", "use_cnn"),
         )
 
         return key

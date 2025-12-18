@@ -1,69 +1,86 @@
 
-<!-- [![Documentation Status](https://readthedocs.org/projects/stable-baselines/badge/?version=master)](https://stable-baselines3.readthedocs.io/en/master/?badge=master) [![coverage report](https://gitlab.com/araffin/stable-baselines3/badges/master/coverage.svg)](https://gitlab.com/araffin/stable-baselines3/-/commits/master) -->
-<!-- ![CI](https://github.com/araffin/sbx/workflows/CI/badge.svg)
-[![codestyle](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) -->
-
-
-
-<p align="">
+<p align="center">
   <img src="http://adityab.github.io/CrossQ/static/images/crossq-fancy.png" align="center" width="300px"/>
 </p>
 
-[[`🌏 Webpage`](http://aditya.bhatts.org/CrossQ/)] [[`📕 Paper `](https://openreview.net/pdf?id=PczQtTsTIX)] [[`💬 ICLR 2024 OpenReview (top 5% spotlight)`](https://openreview.net/forum?id=PczQtTsTIX)]
+# Super Mario Bros RL Benchmark: CrossQ vs DroQ vs RedQ
 
-Official code release for the **ICLR 2024** paper 👇
-### CrossQ: Batch Normalization in Deep Reinforcement Learning for Greater Sample Efficiency and Simplicity
-_Bhatt A.\*, Palenicek D.\*, Belousov B., Argus M., Amiranashvili A., Brox T., Peters J._
+This repository contains a benchmark comparing three advanced Reinforcement Learning algorithms—**CrossQ**, **DroQ**, and **RedQ**—on the **Super Mario Bros** environment (`gym-super-mario-bros`).
 
-<p align="center">
-  <img src="http://adityab.github.io/CrossQ/static/images/efficiency_sample_compute.png" align="center" width="80%"/>
-</p>
+The goal is to visually and empirically compare which algorithm learns to play the game faster and more efficiently.
 
-## Setup
-Execute the following commands to set up a conda environment to run experiments
-```bash
-conda create -n crossq python=3.11.5
-conda activate crossq
-conda install -c nvidia cuda-nvcc=12.3.52
+## What is CrossQ?
 
-pip install -e .
-pip install "jax[cuda12_pip]==0.4.19" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
-```
+**CrossQ** (Batch Normalization in Deep Reinforcement Learning) is a novel approach to Off-Policy RL that introduces Batch Normalization (BN) into the Critic networks without using Target Networks.
 
-## Running Experiments
-The main entry point for running experiments is `train.py`. You can configure experiments with the appropriate environment and agent flags. For more info run `python train.py --help`.
+### Why is it Efficient?
+- **No Target Networks**: Traditional algorithms like SAC or TD3 use "target networks" (slowly updating copies of the main network) to stabilize training. CrossQ removes these, simplifying the architecture.
+- **Batch Normalization**: By correctly applying BN, CrossQ allows for much higher Update-To-Data (UTD) ratios (training the network many times per environment step) without divergence.
+- **Sample Efficiency**: It achieves state-of-the-art sample efficiency, often matching or beating Model-Based RL methods while being purely Model-Free.
 
-To train **with WandB logging**, run the following command to train a CrossQ agent on the `Humanoid-v4` environment with seed `9`, which will log the results to your WandB entity and project:
-```bash
-python train.py -algo crossq -env Humanoid-v4 -seed 9 -wandb_mode 'online' -wandb_entity my_team -wandb_project crossq
-```
-To train **without WandB logging**, run the following command, and in a different terminal run `tensorboard --logdir logs` to visualize training progress:
-```bash
-python train.py -algo crossq -env Humanoid-v4 -seed 9 -wandb_mode 'disabled'
-```
+In this benchmark, we pit it against:
+- **RedQ**: Randomized Ensembled Double Q-Learning (High UTD, many critics).
+- **DroQ**: Dropout Q-Learning (High UTD, dropout for regularization).
 
-To train **on a cluster**, we provide examples of slurm scripts in `/slurm` to run various experiments, baselines and ablations performed in the paper on a slurm cluster.
-These configurations are very cluster specific and probably need to be adjusted for your specific cluster. However, they should surve as a starting point.
+## Setup Instructions
 
-<p align="center">
-  <img src="http://adityab.github.io/CrossQ/static/images/crossq_efficiency_brief.png" align="center" width="80%"/>
-</p>
+### Prerequisites
+- Python >= 3.9
+- Jupyter Notebook
+- Basic build tools (for compiling some dependencies)
 
-## Citing this Project and the Paper
+### Installation
 
-To cite our paper and/or this repository in publications:
+1. **Clone the Repository**
+   ```bash
+   git clone <your-repo-url>
+   cd CrossQ
+   ```
 
-```bibtex
-@inproceedings{
-  bhatt2024crossq,
-  title={CrossQ: Batch Normalization in Deep Reinforcement Learning for Greater Sample Efficiency and Simplicity},
-  author={Aditya Bhatt and Daniel Palenicek and Boris Belousov and Max Argus and Artemij Amiranashvili and Thomas Brox and Jan Peters},
-  booktitle={The Twelfth International Conference on Learning Representations},
-  year={2024},
-  url={https://openreview.net/forum?id=PczQtTsTIX}
-}
-```
+2. **Install Dependencies**
+   It is recommended to use a virtual environment (Conda or venv).
+   ```bash
+   conda create -n crossq_mario python=3.9
+   conda activate crossq_mario
+   
+   # Install project dependencies
+   pip install -e .
+   
+   # Install Mario env and other tools
+   pip install gym-super-mario-bros nes-py gymnasium shimmy opencv-python matplotlib jupyter ipywidgets
+   ```
 
-## Acknowledgements
+   *Note: If you are on Mac with Apple Silicon (M1/M2/M3), ensure you have compatible `jax` and `tensorflow-probability` versions installed.*
 
-The implementation is built upon code from [Stable Baselines JAX](https://github.com/araffin/sbx/).
+3. **Verify Setup**
+   You can run the provided verification script to ensure the environment and models initialize correctly:
+   ```bash
+   python verify_setup.py
+   ```
+
+## Running the Benchmark
+
+The entire benchmark is contained within a Jupyter Notebook.
+
+1. **Launch Jupyter**
+   ```bash
+   jupyter notebook benchmark_mario.ipynb
+   ```
+
+2. **Run All Cells**
+   - The notebook will initialize three agents: CrossQ, DroQ, and RedQ.
+   - It will train them sequentially on `SuperMarioBros-v0`.
+   - **Training**: Rewards are logged to `./mario_benchmark_logs/`.
+   - **Plotting**: After training, the notebook generates a learning curve comparing the episode rewards of the three models.
+   - **Visual Race**: Finally, a popup window will appear showing the three agents playing the level side-by-side in real-time.
+
+## Project Structure
+- `benchmark_mario.ipynb`: Main experiment notebook.
+- `mario_wrapper.py`: Custom wrapper to make `gym-super-mario-bros` compatible with modern `gymnasium` and `sbx`.
+- `sbx/`: The core RL algorithms library (based on Stable Baselines JAX), modified to support CNNs (`NatureCNN`) for pixel-based Mario environment.
+- `train.py`: Original training script from the CrossQ paper (mostly for MuJoCo/continuous control tasks).
+
+## Credits
+- Based on the **CrossQ** paper: *Bhatt A., Palenicek D., Belousov B., Argus M., Amiranashvili A., Brox T., Peters J.*
+- Original Repository: [adityab/CrossQ](https://github.com/adityab/CrossQ)
+- Benchmark implementation by Antigravity (Google DeepMind).

@@ -11,7 +11,8 @@ setup(
     package_data={"sbx": ["py.typed", "version.txt"]},
     install_requires=[
         "stable_baselines3==2.1.0",
-        "flax==0.7.4",
+        "numpy<2.0.0",
+        "flax>=0.8.0",
         "gymnasium==0.29.1",
         "imageio==2.31.3",
         "mujoco==2.3.7",
@@ -19,9 +20,9 @@ setup(
         "tqdm==4.66.1",
         "rich==13.5.2",
         "rlax==0.1.6",
-        "tensorboard==2.14.0",
-        "tensorflow-probability==0.21.0",
-        "wandb==0.15.10",
+        "tensorboard>=2.14.0",
+        "tensorflow-probability>=0.21.0",
+        "wandb>=0.15.10",
         "scipy==1.11.4",
         "shimmy==1.3.0"
     ],
@@ -50,9 +51,13 @@ setup(
     "gym openai stable baselines toolbox python data-science",
     license="MIT",
     version=__version__,
-    python_requires="==3.11.5",
+    python_requires=">=3.8",
     # PyPI package information.
     classifiers=[
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
     ],
 )
